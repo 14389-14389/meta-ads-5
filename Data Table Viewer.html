@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Metadata Ingestion & Enrichment</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        #metadata-form label, #enrichment-options label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        #metadata-form input[type="text"],
+        #metadata-form textarea,
+        #enrichment-options select {
+            width: calc(100% - 12px);
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        #ingest-button, #enrich-button {
+            padding: 10px 15px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        #ingest-button:hover, #enrich-button:hover {
+            background-color: purple;
+        }
+
+        #metadata-display {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        #metadata-display h3 {
+            margin-top: 0;
+        }
+
+        .enrichment-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background-color: #fff;
+        }
+
+        .enrichment-item label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .enrichment-item span {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h2>Metadata Ingestion</h2>
+            <form id="metadata-form">
+                <label for="tableName">Table Name:</label>
+                <input type="text" id="tableName" name="tableName" required>
+
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="4"></textarea>
+
+                <label for="columns">Columns (comma-separated: name:type:constraints):</label>
+                <textarea id="columns" name="columns" rows="5" placeholder="e.g., id:INT:PRIMARY KEY, name:VARCHAR(255):NOT NULL"></textarea>
+
+                <label for="tags">Tags (comma-separated):</label>
+                <input type="text" id="tags" name="tags">
+
+                <button type="button" id="ingest-button">Ingest Metadata</button>
+            </form>
+
+            <div id="metadata-display">
+                <h3>Ingested Metadata</h3>
+                <pre id="metadata-output"></pre>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <h2>Metadata Enrichment</h2>
+            <div id="enrichment-options">
+                <label for="enrichmentType">Select Enrichment Type:</label>
+                <select id="enrichmentType">
+                    <option value="">-- Select --</option>
+                    <option value="data_profiling">Data Profiling (suggested types, min/max, etc.)</option>
+                    <option value="semantic_tagging">Semantic Tagging (suggested categories)</option>
+                    <option value="data_quality_checks">Data Quality Checks (null counts, uniqueness)</option>
+                    <option value="lineage_tracking">Lineage Tracking (upstream/downstream sources)</option>
+                    <option value="governance_rules">Governance Rules (sensitivity level, access controls)</option>
+                    </select>
+
+                <div id="enrichment-parameters">
+                    </div>
+
+                <button type="button" id="enrich-button" disabled>Enrich Metadata</button>
+
+                <h3>Enrichment Results</h3>
+                <div id="enrichment-results">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ingestButton = document.getElementById('ingest-button');
+            const metadataForm = document.getElementById('metadata-form');
+            const metadataOutput = document.getElementById('metadata-output');
+            const enrichButton = document.getElementById('enrich-button');
+            const enrichmentTypeSelect = document.getElementById('enrichmentType');
+            const enrichmentParametersDiv = document.getElementById('enrichment-parameters');
+            const enrichmentResultsDiv = document.getElementById('enrichment-results');
+
+            let ingestedMetadata = null;
+
+            ingestButton.addEventListener('click', () => {
+                const tableName = metadataForm.tableName.value;
+                const description = metadataForm.description.value;
+                const columns = metadataForm.columns.value;
+                const tags = metadataForm.tags.value;
+
+                const metadata = {
+                    tableName: tableName,
+                    description: description,
+                    columns: columns.split(',').map(col => col.trim()),
+                    tags: tags.split(',').map(tag => tag.trim())
+                };
+
+                ingestedMetadata = metadata;
+                metadataOutput.textContent = JSON.stringify(ingestedMetadata, null, 2);
+                enrichButton.disabled = false;
+                alert('Metadata ingested successfully!');
+            });
+
+            enrichmentTypeSelect.addEventListener('change', () => {
+                const selectedEnrichment = enrichmentTypeSelect.value;
+                enrichmentParametersDiv.innerHTML = ''; 
+
+                if (selectedEnrichment === 'data_profiling') {
+                    enrichmentParametersDiv.innerHTML = `
+                        <label for="profileColumns">Columns to Profile (comma-separated):</label>
+                        <input type="text" id="profileColumns" placeholder="e.g., column1, column2">
+                    `;
+                } else if (selectedEnrichment === 'semantic_tagging') {
+                    enrichmentParametersDiv.innerHTML = `
+                        <label for="semanticColumns">Columns to Tag (comma-separated):</label>
+                        <input type="text" id="semanticColumns" placeholder="e.g., columnA, columnB">
+                        <label for="suggestedTags">Suggest Tags (comma-separated):</label>
+                        <input type="text" id="suggestedTags" placeholder="e.g., user_id, product_name">
+                    `;
+                } else if (selectedEnrichment === 'data_quality_checks') {
+                    enrichmentParametersDiv.innerHTML = `
+                        <label for="qualityColumns">Columns to Check (comma-separated):</label>
+                        <input type="text" id="qualityColumns" placeholder="e.g., email, phone_number">
+                        <label for="checksToPerform">Checks to Perform (comma-separated: null, unique):</label>
+                        <input type="text" id="checksToPerform" placeholder="e.g., null, unique">
+                    `;
+                } else if (selectedEnrichment === 'lineage_tracking') {
+                    enrichmentParametersDiv.innerHTML = `
+                        <label for="upstreamSources">Upstream Sources (comma-separated):</label>
+                        <input type="text" id="upstreamSources" placeholder="e.g., source_table_a, source_system_b">
+                        <label for="downstreamTargets">Downstream Targets (comma-separated):</label>
+                        <input type="text" id="downstreamTargets" placeholder="e.g., report_c, dashboard_d">
+                    `;
+                } else if (selectedEnrichment === 'governance_rules') {
+                    enrichmentParametersDiv.innerHTML = `
+                        <label for="sensitivityLevel">Sensitivity Level:</label>
+                        <select id="sensitivityLevel">
+                            <option value="public">Public</option>
+                            <option value="internal">Internal</option>
+                            <option value="confidential">Confidential</option>
+                            <option value="highly_confidential">Highly Confidential</option>
+                        </select>
+                        <label for="accessControls">Access Controls (comma-separated: user/group:permission):</label>
+                        <textarea id="accessControls" rows="3" placeholder="e.g., data_analysts:read, finance_team:read,write"></textarea>
+                    `;
+                }
+            });
+
+            enrichButton.addEventListener('click', () => {
+                if (!ingestedMetadata) {
+                    alert('Please ingest metadata first.');
+                    return;
+                }
+
+                const selectedEnrichment = enrichmentTypeSelect.value;
+                let enrichmentData = { type: selectedEnrichment };
+
+                if (selectedEnrichment === 'data_profiling') {
+                    enrichmentData.profileColumns = document.getElementById('profileColumns').value.split(',').map(col => col.trim());
+                } else if (selectedEnrichment === 'semantic_tagging') {
+                    enrichmentData.semanticColumns = document.getElementById('semanticColumns').value.split(',').map(col => col.trim());
+                    enrichmentData.suggestedTags = document.getElementById('suggestedTags').value.split(',').map(tag => tag.trim());
+                } else if (selectedEnrichment === 'data_quality_checks') {
+                    enrichmentData.qualityColumns = document.getElementById('qualityColumns').value.split(',').map(col => col.trim());
+                    enrichmentData.checksToPerform = document.getElementById('checksToPerform').value.split(',').map(check => check.trim());
+                } else if (selectedEnrichment === 'lineage_tracking') {
+                    enrichmentData.upstreamSources = document.getElementById('upstreamSources').value.split(',').map(source => source.trim());
+                    enrichmentData.downstreamTargets = document.getElementById('downstreamTargets').value.split(',').map(target => target.trim());
+                } else if (selectedEnrichment === 'governance_rules') {
+                    enrichmentData.sensitivityLevel = document.getElementById('sensitivityLevel').value;
+                    enrichmentData.accessControls = document.getElementById('accessControls').value.split(',').map(rule => rule.trim());
+                }
+
+                const enrichmentResult = {
+                    status: 'Processing...',
+                    request: {
+                        metadata: ingestedMetadata,
+                        enrichment: enrichmentData
+                    }
+                };
+
+                enrichmentResultsDiv.innerHTML = `<pre>${JSON.stringify(enrichmentResult, null, 2)}</pre>`;
+                alert('Enrichment request sent (front-end display only)!');
+            });
+        });
+    </script>
+</body>
+</html>

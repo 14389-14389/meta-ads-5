@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACTUS Broadcast Logger (AMIES)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .upload-section, .metadata-section, .enrichment-section, .results-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .metadata-field {
+            margin-bottom: 10px;
+        }
+
+        .metadata-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .metadata-field input[type="text"],
+        .metadata-field textarea {
+            width: calc(100% - 12px);
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .enrichment-option {
+            margin-bottom: 8px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: purple;
+        }
+
+        #results {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><b><u>Uploading Files</u></b></h1>
+
+        <div class="upload-section">
+            <h2>1. Upload File</h2>
+            <input type="file" id="fileInput">
+            <button onclick="handleFileUpload()">Upload</button>
+            <p id="uploadStatus"></p>
+        </div>
+
+        <div class="metadata-section" id="metadataSection" style="display: none;">
+            <h2>2. Review and Edit Basic Metadata</h2>
+            <div id="basicMetadataFields">
+                </div>
+        </div>
+
+        <div class="enrichment-section" id="enrichmentSection" style="display: none;">
+            <h2>3. Select Enrichment Options</h2>
+            <div id="enrichmentOptions">
+                <div class="enrichment-option">
+                    <input type="checkbox" id="extractKeywords" name="enrichment" value="keywords">
+                    <label for="extractKeywords">Extract Keywords</label>
+                </div>
+                <div class="enrichment-option">
+                    <input type="checkbox" id="performSentimentAnalysis" name="enrichment" value="sentiment">
+                    <label for="performSentimentAnalysis">Perform Sentiment Analysis (if applicable)</label>
+                </div>
+                <div class="enrichment-option">
+                    <input type="checkbox" id="identifyEntities" name="enrichment" value="entities">
+                    <label for="identifyEntities">Identify Entities (e.g., people, organizations, locations)</label>
+                </div>
+                </div>
+            <button onclick="submitMetadataAndEnrich()">Process Metadata</button>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>4. Processing Results</h2>
+            <pre id="results"></pre>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFile = null;
+        let basicMetadata = {};
+
+        async function handleFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadStatus = document.getElementById('uploadStatus');
+            uploadedFile = fileInput.files[0];
+
+            if (uploadedFile) {
+                uploadStatus.textContent = `File "${uploadedFile.name}" selected.`;
+            } else {
+                uploadStatus.textContent = 'Please select a file.';
+                document.getElementById('metadataSection').style.display = 'none';
+                document.getElementById('enrichmentSection').style.display = 'none';
+                document.getElementById('resultsSection').style.display = 'none';
+            }
+        }
+
+        function simulateBasicMetadataExtraction(file) {
+            basicMetadata = {
+                title: file.name,
+                author: '',
+                creationDate: new Date().toLocaleDateString(),
+                description: ''
+            };
+            displayBasicMetadataFields(basicMetadata);
+            document.getElementById('metadataSection').style.display = 'block';
+        }
+
+        function displayBasicMetadataFields(metadata) {
+            const basicMetadataFieldsDiv = document.getElementById('basicMetadataFields');
+            basicMetadataFieldsDiv.innerHTML = ''; 
+
+            for (const key in metadata) {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.classList.add('metadata-field');
+
+                const label = document.createElement('label');
+                label.textContent = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim() + ':';
+                fieldDiv.appendChild(label);
+
+                let inputElement;
+                if (key === 'description') {
+                    inputElement = document.createElement('textarea');
+                } else {
+                    inputElement = document.createElement('input');
+                    inputElement.type = 'text';
+                }
+                inputElement.id = `metadata-${key}`;
+                inputElement.value = metadata[key] || '';
+                fieldDiv.appendChild(inputElement);
+
+                basicMetadataFieldsDiv.appendChild(fieldDiv);
+            }
+        }
+
+        async function submitMetadataAndEnrich() {
+            if (!uploadedFile) {
+                alert('Please upload a file first.');
+                return;
+            }
+
+            for (const key in basicMetadata) {
+                const inputElement = document.getElementById(`metadata-${key}`);
+                if (inputElement) {
+                    basicMetadata[key] = inputElement.value;
+                }
+            }
+
+            const enrichmentCheckboxes = document.querySelectorAll('input[name="enrichment"]:checked');
+            const selectedEnrichments = Array.from(enrichmentCheckboxes).map(checkbox => checkbox.value);
+
+            document.getElementById('enrichmentSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('results').textContent = 'Processing metadata and performing enrichment... Please wait.';
+
+            const processingResults = await simulateBackendProcessing(uploadedFile, basicMetadata, selectedEnrichments);
+
+            document.getElementById('results').textContent = JSON.stringify(processingResults, null, 2);
+        }
+
+        async function simulateBackendProcessing(file, metadata, enrichments) {
+            
+            await new Promise(resolve => setTimeout(resolve, 2000)); 
+
+            const results = {
+                filename: file.name,
+                basicMetadata: metadata,
+                enrichmentOptions: enrichments,
+                extractedKeywords: enrichments.includes('keywords') ? ['example', 'metadata', 'file', 'upload'] : [],
+                sentimentAnalysis: enrichments.includes('sentiment') ? 'Neutral' : null,
+                identifiedEntities: enrichments.includes('entities') ? ['Organization: Example Inc.', 'Person: John Doe'] : [],
+                processingTime: '2 seconds'
+            };
+
+            return results;
+        }
+    </script>
+</body>
+</html>

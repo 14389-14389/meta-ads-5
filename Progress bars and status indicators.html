@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><b><u>Progress Bar</u></b></title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        .ingestion-task {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-container {
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            background-color: blue;
+            height: 100%;
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.3s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 0.8em;
+        }
+
+        .status-indicator {
+            font-weight: bold;
+        }
+
+        .status-pending {
+            color: orange;
+        }
+
+        .status-processing {
+            color: blue;
+        }
+
+        .status-completed {
+            color: blue;
+        }
+
+        .status-failed {
+            color: red;
+        }
+
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background-color: #eee;
+        }
+
+        button:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced Metadata Ingestion System</h1>
+
+    <div id="ingestionArea">
+        </div>
+
+    <button onclick="startIngestion()">Start New Ingestion</button>
+
+    <script>
+        const ingestionArea = document.getElementById('ingestionArea');
+        let taskIdCounter = 1;
+
+        function createTaskElement(taskId, metadataSource) {
+            const taskDiv = document.createElement('div');
+            taskDiv.classList.add('ingestion-task');
+            taskDiv.id = `task-${taskId}`;
+
+            const headerDiv = document.createElement('div');
+            headerDiv.classList.add('task-header');
+            headerDiv.innerHTML = `<h3>Ingesting: ${metadataSource}</h3>`;
+            taskDiv.appendChild(headerDiv);
+
+            const progressContainer = document.createElement('div');
+            progressContainer.classList.add('progress-container');
+            const progressBar = document.createElement('div');
+            progressBar.classList.add('progress-bar');
+            progressBar.id = `progress-${taskId}`;
+            progressBar.innerText = '0%';
+            progressContainer.appendChild(progressBar);
+            taskDiv.appendChild(progressContainer);
+
+            const statusDiv = document.createElement('div');
+            statusDiv.classList.add('status-indicator', 'status-pending');
+            statusDiv.id = `status-${taskId}`;
+            statusDiv.innerText = 'Pending';
+            taskDiv.appendChild(statusDiv);
+
+            return taskDiv;
+        }
+
+        function updateProgress(taskId, progress) {
+            const progressBar = document.getElementById(`progress-${taskId}`);
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+                progressBar.innerText = `${progress}%`;
+            }
+        }
+
+        function updateStatus(taskId, status) {
+            const statusDiv = document.getElementById(`status-${taskId}`);
+            if (statusDiv) {
+                statusDiv.innerText = status;
+                statusDiv.className = `status-indicator status-${status.toLowerCase()}`;
+            }
+        }
+
+        async function simulateIngestion(taskId, metadataSource) {
+            updateStatus(taskId, 'Processing');
+            for (let i = 0; i <= 100; i += 10) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                updateProgress(taskId, i);
+            }
+            const success = Math.random() > 0.2;
+            if (success) {
+                updateStatus(taskId, 'Completed');
+            } else {
+                updateStatus(taskId, 'Failed');
+            }
+        }
+
+        function startIngestion() {
+            const metadataSources = ["Database A", "CSV File X", "API Endpoint Y"];
+            metadataSources.forEach(source => {
+                const taskId = taskIdCounter++;
+                const taskElement = createTaskElement(taskId, source);
+                ingestionArea.appendChild(taskElement);
+                simulateIngestion(taskId, source);
+            });
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Metadata Ingestion & Enrichment</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        textarea,
+        select {
+            width: calc(100% - 12px);
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: blueviolet;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: blueviolet;
+        }
+        #metadata-display {
+            margin-top: 20px;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .enrichment-option {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        .enrichment-option label {
+            font-weight: normal;
+        }
+        .api-integration {
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+        }
+        .api-response {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f0f8ff;
+        }
+        .error-message {
+            color: red;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><b><u>API Integration</u></b></h1>
+
+        <div class="form-group">
+            <label for="source-data">Source Data (e.g., URL, File Path, Text):</label>
+            <textarea id="source-data" rows="5" placeholder="Enter data source"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="data-format">Data Format:</label>
+            <select id="data-format">
+                <option value="json">JSON</option>
+                <option value="xml">XML</option>
+                <option value="csv">CSV</option>
+                <option value="text">Plain Text</option>
+            </select>
+        </div>
+
+        <h2>Metadata Extraction Options</h2>
+        <div class="form-group">
+            <label for="extraction-rules">Custom Extraction Rules (Optional - JSON):</label>
+            <textarea id="extraction-rules" rows="3" placeholder="Define custom rules for extraction"></textarea>
+        </div>
+
+        <h2>Metadata Enrichment Options</h2>
+        <div id="enrichment-options">
+            <div class="enrichment-option">
+                <label><input type="checkbox" id="enrich-keywords"> Extract Keywords</label>
+                <div id="keyword-options" style="display: none; margin-left: 20px;">
+                    <label for="keyword-limit">Keyword Limit:</label>
+                    <input type="number" id="keyword-limit" value="5">
+                </div>
+            </div>
+            <div class="enrichment-option">
+                <label><input type="checkbox" id="enrich-sentiment"> Analyze Sentiment</label>
+            </div>
+            <div class="enrichment-option">
+                <label><input type="checkbox" id="enrich-entity"> Identify Entities</label>
+            </div>
+            </div>
+
+        <button onclick="ingestAndEnrich()">Ingest & Enrich Metadata</button>
+
+        <div id="metadata-display" style="display: none;">
+            <h2>Extracted & Enriched Metadata</h2>
+            <pre id="metadata-output"></pre>
+        </div>
+
+        <div class="api-integration">
+            <h2>API Integration</h2>
+            <div class="form-group">
+                <label for="api-endpoint">API Endpoint:</label>
+                <input type="text" id="api-endpoint" placeholder="Enter API endpoint URL">
+            </div>
+            <div class="form-group">
+                <label for="api-payload">API Payload (Optional - JSON):</label>
+                <textarea id="api-payload" rows="3" placeholder="Enter payload data for API"></textarea>
+            </div>
+            <button onclick="integrateWithAPI()">Integrate with API</button>
+            <div id="api-response" style="display: none;">
+                <h3>API Response</h3>
+                <pre id="api-output"></pre>
+            </div>
+            <p id="api-error" class="error-message" style="display: none;"></p>
+        </div>
+    </div>
+
+    <script>
+        const metadataDisplay = document.getElementById('metadata-display');
+        const metadataOutput = document.getElementById('metadata-output');
+        const keywordEnrichment = document.getElementById('enrich-keywords');
+        const keywordOptions = document.getElementById('keyword-options');
+
+        keywordEnrichment.addEventListener('change', function() {
+            keywordOptions.style.display = this.checked ? 'block' : 'none';
+        });
+
+        async function ingestAndEnrich() {
+            const sourceData = document.getElementById('source-data').value;
+            const dataFormat = document.getElementById('data-format').value;
+            const extractionRules = document.getElementById('extraction-rules').value;
+            const enrichKeywords = document.getElementById('enrich-keywords').checked;
+            const keywordLimit = document.getElementById('keyword-limit').value;
+            const enrichSentiment = document.getElementById('enrich-sentiment').checked;
+            const enrichEntity = document.getElementById('enrich-entity').checked;
+
+            if (!sourceData) {
+                alert('Please provide source data.');
+                return;
+            }
+
+            const payload = {
+                sourceData: sourceData,
+                dataFormat: dataFormat,
+                extractionRules: extractionRules,
+                enrichKeywords: enrichKeywords,
+                keywordLimit: enrichKeywords ? parseInt(keywordLimit) : undefined,
+                enrichSentiment: enrichSentiment,
+                enrichEntity: enrichEntity
+            };
+
+            try {
+                const response = await fetch('/api/ingest-enrich', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    metadataOutput.textContent = `Error: ${error.message || 'Failed to ingest and enrich metadata.'}`;
+                    metadataDisplay.style.display = 'block';
+                    return;
+                }
+
+                const result = await response.json();
+                metadataOutput.textContent = JSON.stringify(result, null, 2);
+                metadataDisplay.style.display = 'block';
+
+            } catch (error) {
+                metadataOutput.textContent = `Error: ${error.message || 'An unexpected error occurred.'}`;
+                metadataDisplay.style.display = 'block';
+            }
+        }
+
+        async function integrateWithAPI() {
+            const apiEndpoint = document.getElementById('api-endpoint').value;
+            const apiPayload = document.getElementById('api-payload').value;
+            const apiResponseDiv = document.getElementById('api-response');
+            const apiOutput = document.getElementById('api-output');
+            const apiError = document.getElementById('api-error');
+
+            if (!apiEndpoint) {
+                alert('Please provide the API endpoint.');
+                return;
+            }
+
+            let payloadData = null;
+            if (apiPayload) {
+                try {
+                    payloadData = JSON.parse(apiPayload);
+                } catch (error) {
+                    apiError.textContent = 'Invalid JSON format for API payload.';
+                    apiError.style.display = 'block';
+                    apiResponseDiv.style.display = 'none';
+                    return;
+                }
+            }
+
+            apiError.style.display = 'none';
+
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: payloadData ? 'POST' : 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: payloadData ? JSON.stringify(payloadData) : null,
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    apiOutput.textContent = `Error: ${error.message || 'API request failed.'}`;
+                    apiResponseDiv.style.display = 'block';
+                    return;
+                }
+
+                const result = await response.json();
+                apiOutput.textContent = JSON.stringify(result, null, 2);
+                apiResponseDiv.style.display = 'block';
+
+            } catch (error) {
+                apiOutput.textContent = `Error: ${error.message || 'An unexpected error occurred during API integration.'}`;
+                apiResponseDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

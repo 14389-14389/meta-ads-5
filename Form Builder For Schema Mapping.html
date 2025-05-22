@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><b><u>Form Builder Schema Mapping</u></b></title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .source-schema, .target-schema, .mapping-area {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 15px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        .schema-field {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 8px;
+            margin-bottom: 5px;
+            cursor: grab; /* Indicate draggable */
+        }
+        .mapping-connector {
+            border-left: 2px dashed blueviolet;
+            padding-left: 10px;
+            margin-left: 5px;
+        }
+        .mapping-entry {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .mapping-source {
+            background-color: lightblue;
+            padding: 5px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        .mapping-target {
+            font-weight: bold;
+        }
+        .enrichment-rule {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f0f8ff;
+        }
+        .enrichment-rule label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .enrichment-rule select, .enrichment-rule input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: purple;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced Metadata Ingestion & Enrichment</h1>
+
+    <div class="container">
+        <div class="source-schema">
+            <h2>Source Schema</h2>
+            <div class="schema-field" draggable="true" data-field="source_id">Station Name</div>
+            <div class="schema-field" draggable="true" data-field="source_title">Channel Name</div>
+             <div class="schema-field" draggable="true" data-field="source_id">Channel Number</div>
+              <div class="schema-field" draggable="true" data-field="source_id">Comment</div>
+            <div class="schema-field" draggable="true" data-field="source_description">Error Description</div>
+            <div class="schema-field" draggable="true" data-field="source_creator">Creator</div>
+            <div class="schema-field" draggable="true" data-field="source_date_created">Date Created</div>
+            </div>
+
+        <div class="mapping-area">
+            <h2>Schema Mapping</h2>
+            <p>Drag and drop source fields onto target fields to create mappings.</p>
+            <div id="mapping-list">
+                </div>
+
+            <div class="target-schema">
+                <h2>Target Schema</h2>
+                <div class="schema-field mapping-connector" data-field="target_identifier" data-mapped-from="">Channel Number</div>
+                <div class="schema-field mapping-connector" data-field="target_name" data-mapped-from="">Channel Name</div>
+                <div class="schema-field mapping-connector" data-field="target_name" data-mapped-from="">Station Name</div>
+                <div class="schema-field mapping-connector" data-field="target_abstract" data-mapped-from="">Abstract</div>
+                <div class="schema-field mapping-connector" data-field="target_author" data-mapped-from="">Author</div>
+                <div class="schema-field mapping-connector" data-field="target_creation_date" data-mapped-from="">Creation Date</div>
+                </div>
+        </div>
+    </div>
+
+    <div class="enrichment-rules">
+        <h2>Enrichment Rules</h2>
+        <div class="enrichment-rule">
+            <label for="string_manipulation">String Manipulation on Target Field:</label>
+            <select id="string_manipulation" name="target_field_string">
+                <option value="">Select Target Field</option>
+                <option value="target_name">Name</option>
+                <option value="target_abstract">Abstract</option>
+                </select>
+            <select name="string_operation">
+                <option value="">Select Operation</option>
+                <option value="station_name">Station Name</option>
+                <option value="channel_number">Channel Number</option>
+                <option value="channel_name">Channel Name</option>
+                <option value="creation_date">Creation Date</option>
+                <option value="abstract">Abstract</option>
+                <option value="author">Author</option>
+            </select>
+            <input type="text" name="string_value" placeholder="Enter prefix/suffix">
+        </div>
+
+        <div class="enrichment-rule">
+            <label for="date_format_conversion">Date Format Conversion for Target Field:</label>
+            <select id="date_format_conversion" name="target_field_date">
+                <option value="">Select Target Field</option>
+                <option value="target_creation_date">Creation Date</option>
+                </select>
+            <label for="source_format">Source Format:</label>
+            <input type="text" id="source_format" name="source_format" placeholder="e.g., YYYY-MM-DD">
+            <label for="target_format">Target Format:</label>
+            <input type="text" id="target_format" name="target_format" placeholder="e.g., DD/MM/YYYY">
+        </div>
+
+        </div>
+
+    <button>Apply Mapping and Enrichment</button>
+
+    <script>
+        const sourceFields = document.querySelectorAll('.source-schema .schema-field');
+        const targetFields = document.querySelectorAll('.target-schema .schema-field');
+        const mappingList = document.getElementById('mapping-list');
+
+        let draggedElement = null;
+
+        sourceFields.forEach(field => {
+            field.addEventListener('dragstart', (e) => {
+                draggedElement = e.target;
+                e.dataTransfer.setData('text/plain', field.dataset.field);
+            });
+        });
+
+        targetFields.forEach(field => {
+            field.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            field.addEventListener('drop', (e) => {
+                if (draggedElement) {
+                    const sourceField = draggedElement.dataset.field;
+                    const targetField = e.target.dataset.field;
+
+                    const mappingEntry = document.createElement('div');
+                    mappingEntry.classList.add('mapping-entry');
+                    mappingEntry.innerHTML = `<span class="mapping-source">${sourceField}</span> <span class="mapping-target">-> ${targetField}</span>`;
+                    mappingList.appendChild(mappingEntry);
+
+                    e.target.dataset.mappedFrom = sourceField;
+
+                    draggedElement = null;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

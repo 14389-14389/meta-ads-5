@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search & Filtering Interfaces</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        .ingestion-form, .search-filter-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: calc(100% - 12px);
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: purple;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            margin-right: 5px;
+        }
+
+        .results-container {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #fff;
+        }
+
+        .metadata-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 3px;
+            background-color: #f5f5f5;
+        }
+
+        .metadata-item strong {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1><b><u>Searching & Filtering Bar</u></b></h1>
+
+    <div class="ingestion-form">
+        <h2>Ingest New Metadata</h2>
+        <div class="form-group">
+            <label for="source">Source:</label>
+            <input type="text" id="source" placeholder="e.g., Website, Document">
+        </div>
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" placeholder="Title of the resource">
+        </div>
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" rows="3" placeholder="Brief description"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="keywords">Keywords (comma-separated):</label>
+            <input type="text" id="keywords" placeholder="e.g., data, analysis, report">
+        </div>
+        <div class="form-group">
+            <label for="category">Category:</label>
+            <select id="category">
+                <option value="">Select Category</option>
+                <option value="station_name">Station Name</option>
+                <option value="channel_number">Channel Number</option>
+                <option value="channel_name">Channel Name</option>
+                <option value="user">User</option>
+                <option value="date_searched">Date Searched</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="publicationDate">Publication Date:</label>
+            <input type="date" id="publicationDate">
+        </div>
+        <button onclick="ingestMetadata()">Ingest Metadata</button>
+        <div id="ingestionMessage" style="margin-top: 10px; font-style: italic; color: purple;"></div>
+    </div>
+
+    <div class="search-filter-container">
+        <h2>Search & Filter Metadata</h2>
+        <div class="form-group">
+            <label for="searchTerm">Search Term:</label>
+            <input type="text" id="searchTerm" placeholder="Enter keywords to search">
+        </div>
+
+        <div class="filter-group">
+            <div>
+                <label for="filterCategory">Filter by Category:</label>
+                <select id="filterCategory">
+                    <option value="">All Categories</option>
+                    <option value="station_name">Station Name</option>
+                    <option value="channel_number">Channel Number</option>
+                    <option value="channel_name">Channel Name</option>
+                    <option value="user">User</option>
+                    <option value="date_searched">Date Searched</option>
+                </select>
+            </div>
+            <div>
+                <label for="filterDateFrom">Filter by Date (From):</label>
+                <input type="date" id="filterDateFrom">
+            </div>
+            <div>
+                <label for="filterDateTo">Filter by Date (To):</label>
+                <input type="date" id="filterDateTo">
+            </div>
+        </div>
+
+        <button onclick="searchAndFilter()">Search & Filter</button>
+    </div>
+
+    <div class="results-container">
+        <h2>Search Results</h2>
+        <div id="searchResults">
+            <p>No results found. Ingest metadata and perform a search.</p>
+        </div>
+    </div>
+
+    <script>
+        let metadataStore = [];
+
+        function ingestMetadata() {
+            const source = document.getElementById('source').value;
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const keywords = document.getElementById('keywords').value.split(',').map(k => k.trim());
+            const category = document.getElementById('category').value;
+            const publicationDate = document.getElementById('publicationDate').value;
+            const ingestionMessage = document.getElementById('ingestionMessage');
+
+            if (title && source) {
+                const newMetadata = {
+                    id: Date.now(), 
+                    source,
+                    title,
+                    description,
+                    keywords,
+                    category,
+                    publicationDate
+                };
+                metadataStore.push(newMetadata);
+                ingestionMessage.textContent = 'Metadata ingested successfully!';
+                setTimeout(() => {
+                    ingestionMessage.textContent = '';
+                }, 3000);
+                document.getElementById('source').value = '';
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+                document.getElementById('keywords').value = '';
+                document.getElementById('category').value = '';
+                document.getElementById('publicationDate').value = '';
+            } else {
+                ingestionMessage.textContent = 'Title and Source are required.';
+                ingestionMessage.style.color = 'red';
+            }
+        }
+
+        function searchAndFilter() {
+            const searchTerm = document.getElementById('searchTerm').value.toLowerCase();
+            const filterCategory = document.getElementById('filterCategory').value;
+            const filterDateFrom = document.getElementById('filterDateFrom').value;
+            const filterDateTo = document.getElementById('filterDateTo').value;
+            const searchResultsContainer = document.getElementById('searchResults');
+            searchResultsContainer.innerHTML = ''; 
+
+            const filteredResults = metadataStore.filter(item => {
+                const titleMatch = item.title.toLowerCase().includes(searchTerm);
+                const descriptionMatch = item.description.toLowerCase().includes(searchTerm);
+                const keywordsMatch = item.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm));
+                const categoryMatch = filterCategory === '' || item.category === filterCategory;
+
+                const publicationDate = new Date(item.publicationDate);
+                const dateFromMatch = !filterDateFrom || publicationDate >= new Date(filterDateFrom);
+                const dateToMatch = !filterDateTo || publicationDate <= new Date(filterDateTo);
+
+                return (titleMatch || descriptionMatch || keywordsMatch) && categoryMatch && dateFromMatch && dateToMatch;
+            });
+
+            if (filteredResults.length > 0) {
+                filteredResults.forEach(item => {
+                    const metadataItem = document.createElement('div');
+                    metadataItem.classList.add('metadata-item');
+                    metadataItem.innerHTML = `
+                        <strong>Title:</strong> ${item.title}<br>
+                        <strong>Source:</strong> ${item.source}<br>
+                        <strong>Description:</strong> ${item.description}<br>
+                        <strong>Keywords:</strong> ${item.keywords.join(', ')}<br>
+                        <strong>Category:</strong> ${item.category}<br>
+                        <strong>Publication Date:</strong> ${item.publicationDate}
+                    `;
+                    searchResultsContainer.appendChild(metadataItem);
+                });
+            } else {
+                searchResultsContainer.innerHTML = '<p>No matching metadata found.</p>';
+            }
+        }
+    </script>
+
+</body>
+</html>

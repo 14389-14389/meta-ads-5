@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Metadata Ingestion & Enrichment</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        .metadata-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .metadata-key {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .enrichment-controls {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #eee;
+        }
+        #realtime-updates {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px dashed #bbb;
+            border-radius: 5px;
+            background-color: purple;
+            font-style: italic;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h1><b><u>Real-time Updates</u></b></h1>
+
+    <div id="metadata-display">
+        </div>
+
+    <div class="enrichment-controls">
+        <h2>Enrichment Controls</h2>
+        <label for="enrichment-field">Field to Enrich:</label>
+        <select id="enrichment-field">
+            </select>
+        <label for="enrichment-value">New Value:</label>
+        <input type="text" id="enrichment-value">
+        <button onclick="applyEnrichment()">Apply Enrichment</button>
+    </div>
+
+    <div id="realtime-updates">
+        Real-time updates will appear here...
+    </div>
+
+    <script>
+        let currentMetadata = {
+            "Title": "ACTUS",
+            "Station Name": ["CACENTRE1, CACENTRE2, CACENTRE3, KISUMU, KAHAWA, KISII, NAKURU, GARISSA, KITALE, SOUTHB, MOMBASA1, ELDORET, NYERI, MERU, BUNGOMA, KITUI, NAROK, MARSABIT"],
+            "Creation_Year": "2025",
+            "keywords": ["document", "example", "content"],
+            "subject": "General Information"
+        };
+
+        function displayMetadata(metadata) {
+            const metadataDisplay = document.getElementById('metadata-display');
+            metadataDisplay.innerHTML = ''; 
+            const enrichmentFieldSelect = document.getElementById('enrichment-field');
+            enrichmentFieldSelect.innerHTML = '';
+            for (const key in metadata) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                enrichmentFieldSelect.appendChild(option);
+            }
+
+            for (const key in metadata) {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('metadata-item');
+                itemDiv.innerHTML = `<span class="metadata-key">${key}:</span> <span>${Array.isArray(metadata[key]) ? metadata[key].join(', ') : metadata[key]}</span>`;
+                metadataDisplay.appendChild(itemDiv);
+            }
+        }
+
+        function applyEnrichment() {
+            const field = document.getElementById('enrichment-field').value;
+            const value = document.getElementById('enrichment-value').value;
+            const realtimeUpdates = document.getElementById('realtime-updates');
+
+            if (field && value) {
+                currentMetadata[field] = value;
+                displayMetadata(currentMetadata);
+                realtimeUpdates.textContent = `Real-time Update: Field '${field}' updated to '${value}'`;
+                document.getElementById('enrichment-value').value = '';
+            } else {
+                alert('Please select a field and enter a value for enrichment.');
+            }
+        }
+
+        function simulateRealtimeUpdate(updatedData) {
+            for (const key in updatedData) {
+                currentMetadata[key] = updatedData[key];
+            }
+            displayMetadata(currentMetadata);
+            const realtimeUpdates = document.getElementById('realtime-updates');
+            realtimeUpdates.textContent = `Real-time Update: ${JSON.stringify(updatedData)}`;
+        }
+
+        displayMetadata(currentMetadata);
+
+        setTimeout(() => {
+            simulateRealtimeUpdate({ "keywords": ["document", "guide", "information", "updated"], "status": "Reviewed" });
+        }, 5000);
+
+        setTimeout(() => {
+            simulateRealtimeUpdate({ "author": "Dr. Jane Doe" });
+        }, 10000);
+    </script>
+
+</body>
+</html>

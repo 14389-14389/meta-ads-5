@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Metadata Ingestion & Enrichment</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .ingestion-panel, .enrichment-panel {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        #metadataInput {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 10px;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: purple;
+        }
+
+        #ingestedMetadata {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 3px;
+            background-color: #f9f9f9;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .rule-editor {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background-color: #fefefe;
+        }
+
+        .rule-editor label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .rule-editor input[type="text"],
+        .rule-editor select {
+            width: calc(100% - 16px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        .rule-editor button {
+            background-color: blueviolet;
+        }
+
+        .rule-editor button:hover {
+            background-color: blueviolet;
+        }
+
+        #enrichmentRulesContainer {
+            margin-top: 10px;
+        }
+
+        .applied-rules {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #d4edda;
+            border-radius: 3px;
+            background-color: #f0f9e8;
+            font-size: 14px;
+        }
+
+        .applied-rules strong {
+            font-weight: bold;
+        }
+
+        #enrichedMetadata {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #c3e6cb;
+            border-radius: 3px;
+            background-color: #e9fbea;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="ingestion-panel">
+            <h2>Metadata Ingestion</h2>
+            <textarea id="metadataInput" placeholder="Enter metadata (e.g., JSON, CSV)"></textarea>
+            <button onclick="ingestMetadata()">Ingest Metadata</button>
+            <h3>Ingested Metadata:</h3>
+            <pre id="ingestedMetadata"></pre>
+        </div>
+
+        <div class="enrichment-panel">
+            <h2>Metadata Enrichment</h2>
+
+            <h3>Rule Editor</h3>
+            <div class="rule-editor">
+                <label for="targetField">Target Field:</label>
+                <input type="text" id="targetField" placeholder="e.g., title, author">
+
+                <label for="enrichmentType">Enrichment Type:</label>
+                <select id="enrichmentType">
+                    <option value="add_prefix">Add Channel</option>
+                    <option value="add_suffix">Add Station</option>
+                    <option value="replace_value">Replace Value</option>
+                    <option value="extract_pattern">Extract Pattern</option>
+                    <option value="conditional_enrichment">Conditional Enrichment</option>
+                    </select>
+
+                <div id="enrichmentOptions">
+                    </div>
+
+                <button onclick="addEnrichmentRule()">Add Enrichment Rule</button>
+            </div>
+
+            <h3>Enrichment Rules</h3>
+            <div id="enrichmentRulesContainer">
+                </div>
+
+            <button onclick="applyEnrichment()">Apply Enrichment</button>
+
+            <h3>Applied Rules:</h3>
+            <div id="appliedRules" class="applied-rules">
+                </div>
+
+            <h3>Enriched Metadata:</h3>
+            <pre id="enrichedMetadata"></pre>
+        </div>
+    </div>
+
+    <script>
+        let ingestedData = null;
+        const enrichmentRules = [];
+
+        function ingestMetadata() {
+            const metadataInput = document.getElementById('metadataInput').value;
+            try {
+                ingestedData = JSON.parse(metadataInput);
+                document.getElementById('ingestedMetadata').textContent = JSON.stringify(ingestedData, null, 2);
+                document.getElementById('enrichedMetadata').textContent = "";
+                document.getElementById('appliedRules').textContent = "";
+            } catch (error) {
+                ingestedData = metadataInput.split('\n').map(line => line.trim()).filter(line => line !== "");
+                document.getElementById('ingestedMetadata').textContent = ingestedData.join('\n');
+                document.getElementById('enrichedMetadata').textContent = "";
+                document.getElementById('appliedRules').textContent = "";
+                console.error("Error parsing JSON. Treating as plain text lines.", error);
+            }
+        }
+
+        document.getElementById('enrichmentType').addEventListener('change', function() {
+            const enrichmentType = this.value;
+            const enrichmentOptionsDiv = document.getElementById('enrichmentOptions');
+            enrichmentOptionsDiv.innerHTML = ''; // Clear previous options
+
+            switch (enrichmentType) {
+                case 'add_prefix':
+                    enrichmentOptionsDiv.innerHTML = `
+                        <label for="prefixValue">Prefix:</label>
+                        <input type="text" id="prefixValue">
+                    `;
+                    break;
+                case 'add_suffix':
+                    enrichmentOptionsDiv.innerHTML = `
+                        <label for="suffixValue">Suffix:</label>
+                        <input type="text" id="suffixValue">
+                    `;
+                    break;
+                case 'replace_value':
+                    enrichmentOptionsDiv.innerHTML = `
+                        <label for="oldValue">Old Value:</label>
+                        <input type="text" id="oldValue">
+                        <label for="newValue">New Value:</label>
+                        <input type="text" id="newValue">
+                    `;
+                    break;
+                case 'extract_pattern':
+                    enrichmentOptionsDiv.innerHTML = `
+                        <label for="regexPattern">Regex Pattern:</label>
+                        <input type="text" id="regexPattern" placeholder="e.g., (\\d+)">
+                        <label for="groupNumber">Group Number (optional):</label>
+                        <input type="number" id="groupNumber" value="0" min="0">
+                    `;
+                    break;
+                case 'conditional_enrichment':
+                    enrichmentOptionsDiv.innerHTML = `
+                        <label for="conditionField">Condition Field:</label>
+                        <input type="text" id="conditionField" placeholder="e.g., status">
+                        <label for="conditionOperator">Operator:</label>
+                        <select id="conditionOperator">
+                            <option value="equals">Equals</option>
+                            <option value="not_equals">Not Equals</option>
+                            <option value="contains">Contains</option>
+                            </select>
+                        <label for="conditionValue">Condition Value:</label>
+                        <input type="text" id="conditionValue">
+                        <hr>
+                        <label for="thenEnrichmentType">Then Apply:</label>
+                        <select id="thenEnrichmentType">
+                            <option value="add_prefix">Add Prefix</option>
+                            <option value="add_suffix">Add Suffix</option>
+                            <option value="replace_value">Replace Value</option>
+                            </select>
+                        <div id="thenEnrichmentOptions">
+                            </div>
+                    `;
+                    const thenEnrichmentTypeSelect = document.getElementById('thenEnrichmentType');
+                    const thenEnrichmentOptionsDiv = document.getElementById('thenEnrichmentOptions');
+
+                    if (thenEnrichmentTypeSelect) {
+                        thenEnrichmentTypeSelect.addEventListener('change', function() {
+                            const thenType = this.value;
+                            thenEnrichmentOptionsDiv.innerHTML = '';
+                            switch (thenType) {
+                                case 'add_prefix':
+                                    thenEnrichmentOptionsDiv.innerHTML = `<label for="thenPrefixValue">Prefix:</label><input type="text" id="thenPrefixValue">`;
+                                    break;
+                                case 'add_suffix':
+                                    thenEnrichmentOptionsDiv.innerHTML = `<label for="thenSuffixValue">Suffix:</label><input type="text" id="thenSuffixValue">`;
+                                    break;
+                                case 'replace_value':
+                                    thenEnrichmentOptionsDiv.innerHTML = `<label for="thenOldValue">Old Value:</label><input type="text" id="thenOldValue"><label for="thenNewValue">New Value:</label><input type="text" id="thenNewValue">`;
+                                    break;
+                            }
+                        });
+                    }
+                    break;
+                // Add cases for other enrichment types
+            }
+        });
+
+        function addEnrichmentRule() {
+            const targetField = document.getElementById('targetField').value;
+            const enrichmentType = document.getElementById('enrichmentType').value;
+            const rule = { targetField, type: enrichmentType };
+            const enrichmentOptionsDiv = document.getElementById('enrichmentOptions');
+
+            switch (enrichmentType) {
+                case 'add_prefix':
+                    rule.prefix = document.getElementById('prefixValue').value;
+                    break;
+                case 'add_suffix':
+                    rule.suffix = document.getElementById('suffixValue').value;
+                    break;
+                case 'replace_value':
+                    rule.oldValue = document.getElementById('oldValue').value;
+                    rule.newValue = document.getElementById('newValue').value;
+                    break;
+                case 'extract_pattern':
+                    rule.pattern = document.getElementById('regexPattern').value;
+                    const groupNumber = parseInt(document.getElementById('groupNumber').value);
+                    if (!isNaN(groupNumber)) {
+                        rule.group = groupNumber;
+                    }
+                    break;
+                case 'conditional_enrichment':
+                    rule.condition = {
+                        field: document.getElementById('conditionField').value,
+                        operator: document.getElementById('conditionOperator').value,
+                        value: document.getElementById('conditionValue').value
+                    };
+                    rule.then = {
+                        type: document.getElementById('thenEnrichmentType').value
+                    };
+                    const thenType = rule.then.type;
+                    switch (thenType) {
+                        case 'add_prefix':
+                            rule.then.prefix = document.getElementById('thenPrefixValue').value;
+                            break;
+                        case 'add_suffix':
+                            rule.then.suffix = document.getElementById('thenSuffixValue').value;
+                            break;
+                        case 'replace_value':
+                            rule.then.oldValue = document.getElementById('thenOldValue').value;
+                            rule.then.newValue = document.getElementById('thenNewValue').value;
+                            break;
+                    }
+                    break;
+                default:
+                    alert('Invalid enrichment type.');
+                    return;
+            }
+
+            enrichmentRules.push(rule);
+            renderEnrichmentRules();
+            // Clear the rule editor fields
+            document.getElementById('targetField').value = '';
+            document.getElementById('enrichmentType').selectedIndex = 0;
+            document.getElementById('enrichmentOptions').innerHTML = '';
+        }
+
+        function renderEnrichmentRules() {
+            const container = document.getElementById('enrichmentRulesContainer');
+            container.innerHTML = '';
+            enrichmentRules.forEach((rule, index) => {
+                const ruleDiv = document.createElement('div');
+                ruleDiv.classList.add('rule-item');
+                let ruleDescription = `<strong>Target:</strong> ${rule.targetField}, <strong>Type:</strong> ${rule.type}`;
+                switch (rule.type) {
+                    case 'add_prefix':
+                        ruleDescription += `, Prefix: ${rule.prefix}`;
+                        break;
+                    case 'add_suffix':
+                        ruleDescription += `, Suffix: ${rule.suffix}`;
+                        break;
+                    case 'replace_value':
+                        ruleDescription += `, Old: ${rule.oldValue}, New: ${rule.newValue}`;
+                        break;
+                    case 'extract_pattern':
+                        ruleDescription += `, Pattern: ${rule.pattern}`;
+                        if (rule.group !== undefined) {
+                            ruleDescription += `, Group: ${rule.group}`;
+                        }
+                        break;
+                    case 'conditional_enrichment':
+                        ruleDescription += `, If ${rule.condition.field} ${rule.condition.operator} '${rule.condition.value}', Then ${rule.then.type}`;
+                        if (rule.then.prefix) ruleDescription += ` Prefix: ${rule.then.prefix}`;
+                        if (rule.then.suffix) ruleDescription += ` Suffix: ${rule.then.suffix}`;
+                        if (rule.then.oldValue) ruleDescription += ` Old: ${rule.then.oldValue}, New: ${rule.then.newValue}`;
+                        break;
+                }
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteRule(index);
+                ruleDiv.textContent = ruleDescription + ' ';
+                ruleDiv.appendChild(deleteButton);
+                container.appendChild(ruleDiv);
+            });
+        }
+
+        function deleteRule(index) {
+            enrichmentRules.splice(index, 1);
+            renderEnrichmentRules();
+        }
+
+        function applyEnrichment() {
+            if (!ingestedData) {
+                alert('Please ingest metadata first.');
+                return;
+            }
+
+            let enrichedData;
+            let appliedRuleDescriptions = [];
+
+            if (Array.isArray(ingestedData)) {
+                enrichedData = ingestedData.map(item => {
+                    let newItem = typeof item === 'object' && item !== null ? { ...item } : item;
+                    enrichmentRules.forEach(rule => {
+                        if (typeof newItem === 'object' && newItem !== null && newItem.hasOwnProperty(rule.targetField)) {
+                            appliedRuleDescriptions.push(applySingleRule(newItem, rule));
+                        } else if (!Array.isArray(ingestedData) && typeof newItem === 'string' && rule.targetField === '_root') {
+                            const result = applySingleRuleToString(newItem, rule);
+                            newItem = result.enrichedValue;
+                            if (result.applied) {
+                                appliedRuleDescriptions.push(result.description);
+                            }
+                        }
+                    });
+                    return newItem;
+                });
+            } else if (typeof ingestedData === 'object' && ingestedData !== null) {
+                enrichedData = { ...ingestedData };
+                enrichmentRules.forEach(rule => {
+                    if (enrichedData.hasOwnProperty(rule.targetField)) {
+                        appliedRuleDescriptions.push(applySingleRule(enrichedData, rule));
+                    }
+                });
+            } else if (typeof ingestedData === 'string') {
+                let tempEnriched = ingestedData;
+                enrichmentRules.forEach(rule => {
+                    if (rule.targetField === '_root') {
+                        const result = applySingleRuleToString(tempEnriched, rule);
+                        tempEnriched = result.enrichedValue;
+                        if (result.applied) {
+                            appliedRuleDescriptions.push(result.description);
+                        }
+                    }
+                });
+                enrichedData = tempEnriched;
+            } else {
+                enrichedData = ingestedData;
+            }
+
+            document.getElementById('enrichedMetadata').textContent = typeof enrichedData === 'object' ? JSON.stringify(enrichedData, null, 2) : enrichedData;
+            document.getElementById('appliedRules').textContent = appliedRuleDescriptions.filter(desc => desc !== null).join('\n');
+        }
+
+        function applySingleRule(dataItem, rule) {
+            const field = rule.targetField;
+            const value = dataItem[field];
+            let applied = false;
+            let description = null;

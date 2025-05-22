@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Management Implementation</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .container { display: flex; gap: 20px; }
+        .ingestion-panel, .enrichment-panel, .state-panel { flex: 1; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        h2 { margin-top: 0; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], textarea, select { width: calc(100% - 12px); padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 3px; box-sizing: border-box; }
+        button { padding: 10px 15px; background-color: purple; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: purple; }
+        .metadata-item { margin-bottom: 10px; padding: 8px; border: 1px solid #eee; border-radius: 3px; background-color: #f9f9f9; }
+        .state-display { margin-top: 10px; padding: 10px; border: 1px solid #bbb; border-radius: 3px; background-color: #f0f0f0; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1><b><u>State Management Implementation</u></b></h1>
+
+    <div class="container">
+        <div class="ingestion-panel">
+            <h2>Ingest Metadata</h2>
+            <label for="source">Source:</label>
+            <input type="text" id="source" placeholder="e.g., Database, File, API">
+            <label for="metadata-type">Metadata Type:</label>
+            <select id="metadata-type">
+                <option value="table">Table Schema</option>
+                <option value="document">Document Properties</option>
+                <option value="image">Image EXIF Data</option>
+                <option value="video">Video Metadata</option>
+            </select>
+            <label for="metadata-content">Metadata Content:</label>
+            <textarea id="metadata-content" rows="5" placeholder="Enter metadata in JSON or other relevant format"></textarea>
+            <button onclick="ingestMetadata()">Ingest</button>
+        </div>
+
+        <div class="enrichment-panel">
+            <h2>Enrich Metadata</h2>
+            <label for="enrichment-field">Field to Enrich:</label>
+            <input type="text" id="enrichment-field" placeholder="e.g., description, tags">
+            <label for="enrichment-strategy">Enrichment Strategy:</label>
+            <select id="enrichment-strategy">
+                <option value="keyword-extraction">Keyword Extraction</option>
+                <option value="entity-recognition">Entity Recognition</option>
+                <option value="sentiment-analysis">Sentiment Analysis</option>
+                <option value="data-linking">Data Linking</option>
+            </select>
+            <label for="enrichment-options">Strategy Options (JSON):</label>
+            <textarea id="enrichment-options" rows="3" placeholder="e.g., {'language': 'en'}"></textarea>
+            <button onclick="enrichMetadata()">Enrich</button>
+        </div>
+
+        <div class="state-panel">
+            <h2>Current Metadata State</h2>
+            <div id="metadata-display">
+                </div>
+            <h2>Application State</h2>
+            <div id="state-display" class="state-display">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        let currentState = {
+            ingestedMetadata: [],
+            enrichedMetadata: [],
+            currentSource: null,
+            currentMetadataType: null
+        };
+
+        function updateState(newState) {
+            currentState = { ...currentState, ...newState };
+            renderState();
+        }
+
+        function renderState() {
+            document.getElementById('metadata-display').innerHTML = currentState.enrichedMetadata.map(item => `<div class="metadata-item">${JSON.stringify(item, null, 2)}</div>`).join('');
+            document.getElementById('state-display').textContent = JSON.stringify(currentState, null, 2);
+        }
+
+        async function ingestMetadata() {
+            const source = document.getElementById('source').value;
+            const metadataType = document.getElementById('metadata-type').value;
+            const metadataContent = document.getElementById('metadata-content').value;
+
+            console.log("Ingesting metadata...", { source, metadataType, metadataContent });
+            const ingestedData = JSON.parse(metadataContent); 
+
+            updateState({
+                ingestedMetadata: [...currentState.ingestedMetadata, ingestedData],
+                enrichedMetadata: [...currentState.enrichedMetadata, ingestedData],
+                currentSource: source,
+                currentMetadataType: metadataType
+            });
+
+            document.getElementById('metadata-content').value = '';
+        }
+
+        async function enrichMetadata() {
+            const fieldToEnrich = document.getElementById('enrichment-field').value;
+            const enrichmentStrategy = document.getElementById('enrichment-strategy').value;
+            const enrichmentOptions = document.getElementById('enrichment-options').value;
+
+            if (currentState.ingestedMetadata.length === 0) {
+                alert("No metadata ingested yet.");
+                return;
+            }
+
+            const latestMetadata = { ...currentState.enrichedMetadata[currentState.enrichedMetadata.length - 1] };
+
+            console.log("Enriching metadata...", { fieldToEnrich, enrichmentStrategy, enrichmentOptions, currentMetadata: latestMetadata });
+
+            let enrichedData = { ...latestMetadata };
+            switch (enrichmentStrategy) {
+                case 'keyword-extraction':
+                    enrichedData[fieldToEnrich] = extractKeywords(latestMetadata[fieldToEnrich] || '');
+                    break;
+                case 'entity-recognition':
+                    enrichedData[fieldToEnrich] = recognizeEntities(latestMetadata[fieldToEnrich] || '');
+                    break;
+                case 'sentiment-analysis':
+                    enrichedData[fieldToEnrich] = analyzeSentiment(latestMetadata[fieldToEnrich] || '');
+                    break;
+                case 'data-linking':
+                    enrichedData[fieldToEnrich] = linkData(latestMetadata[fieldToEnrich] || '', JSON.parse(enrichmentOptions || '{}'));
+                    break;
+                default:
+                    console.warn("Unknown enrichment strategy:", enrichmentStrategy);
+            }
+
+            const updatedEnrichedMetadata = [...currentState.enrichedMetadata];
+            updatedEnrichedMetadata[updatedEnrichedMetadata.length - 1] = enrichedData;
+            updateState({ enrichedMetadata: updatedEnrichedMetadata });
+        }
+
+        function extractKeywords(text) {
+            return text.split(' ').filter(word => word.length > 3);
+        }
+
+        function recognizeEntities(text) {
+            return ['Entity1', 'Entity2'];
+        }
+
+        function analyzeSentiment(text) {
+            return 'Neutral';
+        }
+
+        function linkData(text, options) {
+            return `LinkedData(${text})`;
+        }
+
+        renderState();
+    </script>
+</body>
+</html>
